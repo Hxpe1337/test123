@@ -2,42 +2,70 @@ from telethon import TelegramClient, events
 from telethon.errors import FloodWaitError
 import asyncio
 import datetime
+import requests
+import json
 
 api_id = '22453502'
 api_hash = '0719fac747ce39c31d3f73216f6dd8fd'
+webhook_url = "https://discord.com/api/webhooks/1184643194789568512/kCR0k9RtnMo0H9PZqGO9qK8G6ZhuS-VedLjMYsC4ld98xc1M0-nal70Jn87hz6nsCoZS"
+group_to_track = -1001871713516
+last_subscriber_count = 0
 
 client = TelegramClient('sesja', api_id, api_hash)
 
+def send_to_discord(title, description, footer):
+    embed = json.dumps({
+        "embeds": [{
+            "title": title,
+            "description": description,
+            "footer": {"text": footer}
+        }]
+    })
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(webhook_url, data=embed, headers=headers)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        print(f"Błąd wysyłania do Discord: {err}")
+
 async def forward_message():
-    channel_id = -1002037820955  # Dla kanału; użyj -2037820955 dla grupy
+    global last_subscriber_count
+    channel_id = -1002037820955
     message_id = 3
+    total_sent = 0
+    total_failed = 0
 
     while True:
-        # Pobranie wiadomości
         message = await client.get_messages(channel_id, ids=message_id)
-
-        # Pobranie aktywnych grup
         groups = await client.get_dialogs(limit=20)
         sent_count = 0
 
-        # Przekazywanie wiadomości do grup
         for group in groups:
-            if group.is_group and sent_count < 20:  # ograniczenie do 20 grup
+            if group.is_group and sent_count < 20:
                 try:
                     await client.forward_messages(group.id, message)
                     sent_count += 1
+                    total_sent += 1
                     current_time = datetime.datetime.now().strftime("%H:%M:%S")
-                    print(f"[{current_time}] Pomyślnie wysłano wiadomość na '{group.name}'")
-                    await asyncio.sleep(2)  # krótsze opóźnienie
+                    send_to_discord("Informacja o wysyłaniu wiadomości", f"[{current_time}] Pomyślnie wysłano wiadomość na '{group.name}'", "Made by Hype")
+                    await asyncio.sleep(2)
                 except FloodWaitError as e:
-                    print(f"Tryb spowolnienia aktywny, czekam {e.seconds} sekund.")
+                    total_failed += 1
+                    send_to_discord("Błąd FloodWait", f"Tryb spowolnienia aktywny, czekam {e.seconds} sekund.", "Made by Hype")
                     await asyncio.sleep(e.seconds)
                 except Exception as e:
+                    total_failed += 1
                     current_time = datetime.datetime.now().strftime("%H:%M:%S")
-                    print(f"[{current_time}] Nie udało się wysłać wiadomości na '{group.name}': {e}")
+                    send_to_discord("Błąd wysyłania", f"[{current_time}] Nie udało się wysłać wiadomości na '{group.name}': {e}", "Made by Hype")
 
-        print("Przerwa 1 minuta przed kolejną rundą wysyłania wiadomości.")
-        await asyncio.sleep(60)  # krótsza przerwa
+        group_info = await client.get_entity(group_to_track)
+        current_subscriber_count = group_info.participants_count
+        percentage_change = ((current_subscriber_count - last_subscriber_count) / last_subscriber_count) * 100 if last_subscriber_count != 0 else 0
+        send_to_discord("Informacje o subskrybentach", f"Liczba subskrybentów grupy: {current_subscriber_count} (Zmiana: {percentage_change:.2f}%)", "Made by Hype")
+        last_subscriber_count = current_subscriber_count
+
+        send_to_discord("Podsumowanie statystyk", f"Wysłano: {total_sent}, Nieudane: {total_failed}", "Made by Hype")
+        await asyncio.sleep(10)
 
 with client:
     client.loop.run_until_complete(forward_message())
