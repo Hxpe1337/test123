@@ -27,35 +27,6 @@ def send_to_discord(title, description, footer):
     except requests.exceptions.HTTPError as err:
         print(f"Błąd wysyłania do Discord: {err}")
 
-from telethon import TelegramClient, events
-from telethon.errors import FloodWaitError
-import asyncio
-import datetime
-import requests
-import json
-
-api_id = '22453502'
-api_hash = '0719fac747ce39c31d3f73216f6dd8fd'
-webhook_url = "https://discord.com/api/webhooks/1184643194789568512/kCR0k9RtnMo0H9PZqGO9qK8G6ZhuS-VedLjMYsC4ld98xc1M0-nal70Jn87hz6nsCoZS"
-group_to_track = -1001871713516
-
-client = TelegramClient('sesja', api_id, api_hash)
-
-def send_to_discord(title, description, footer):
-    embed = json.dumps({
-        "embeds": [{
-            "title": title,
-            "description": description,
-            "footer": {"text": footer}
-        }]
-    })
-    headers = {"Content-Type": "application/json"}
-    response = requests.post(webhook_url, data=embed, headers=headers)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as err:
-        print(f"Błąd wysyłania do Discord: {err}")
-
 async def forward_message():
     channel_id = -1002037820955
     message_id = 3
@@ -87,10 +58,6 @@ async def forward_message():
 
         send_to_discord("Podsumowanie statystyk", f"Wysłano: {total_sent}, Nieudane: {total_failed}", "Made by Hype")
         await asyncio.sleep(10)
-
-
-with client:
-    client.loop.run_until_complete(forward_message())
 
 
 with client:
