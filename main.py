@@ -7,7 +7,7 @@ import json
 
 api_id = '22453502'
 api_hash = '0719fac747ce39c31d3f73216f6dd8fd'
-webhook_url = "https://discord.com/api/webhooks/1184643194789568512/kCR0k9RtnMo0H9PZqGO9qK8G6ZhuS-VedLjMYsC4ld98xc1M0-nal70Jn87hz6nsCoZS"
+webhook_url = "https://discord.com/api/webhooks/1185197999362674710/vz1lCe7sQX0cTA5CUOEjUBNnvRbtytWtjmzxZpXDSmZ19Bw9TevLvadeXxKGyuBgQpFN"
 group_to_track = -1001871713516
 
 client = TelegramClient('sesja', api_id, api_hash)
@@ -35,11 +35,11 @@ async def forward_message():
 
     while True:
         message = await client.get_messages(channel_id, ids=message_id)
-        groups = await client.get_dialogs(limit=20)
+        groups = await client.get_dialogs(limit=25)
         sent_count = 0
 
         for group in groups:
-            if group.is_group and sent_count < 20:
+            if group.is_group and sent_count < 25:
                 try:
                     await client.forward_messages(group.id, message)
                     sent_count += 1
